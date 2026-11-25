@@ -14,7 +14,7 @@
     "clean": "node -e \"for (const p of ['dist','dist-server','release']) require('node:fs').rmSync(p,{recursive:true,force:true})\"",
     "lint": "tsc --noEmit",
     "build:renderer": "vite build",
-    "build:server": "esbuild server.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist-server/server.mjs",
+    "build:server": "esbuild server.ts --bundle --platform=node --format=esm --target=node22 --external:vite --outfile=dist-server/server.mjs",
     "build:desktop": "npm run build:renderer && npm run build:server",
     "dist:windows": "npm run build:desktop && electron-builder --win nsis portable --x64"
   },
