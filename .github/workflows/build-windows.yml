@@ -36,7 +36,7 @@ jobs:
         run: npm run build:desktop
 
       - name: Package NSIS installer and portable EXE
-        run: npx electron-builder --win nsis portable --x64
+        run: npx electron-builder --win nsis portable --x64 --publish never
 
       - name: Upload Windows executables
         uses: actions/upload-artifact@v4
