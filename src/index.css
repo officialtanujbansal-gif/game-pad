@@ -1,0 +1,293 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --font-display: 'Outfit', system-ui, -apple-system, sans-serif;
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+    /* Light Titanium Theme tokens for Controller */
+    --pad-bg: #d4d7de;
+    --pad-shell-1: #f4f5f8;
+    --pad-shell-2: #d9dde5;
+    --pad-lobe: #c8cdd8;
+    --pad-edge: #9da4b4;
+    --pad-ridge: rgba(15, 23, 42, 0.045);
+    --pad-btn-1: #ffffff;
+    --pad-btn-2: #e3e6ee;
+    --pad-btn-edge: #b4bccb;
+    --pad-txt: #161922;
+    --pad-dim: #5d6475;
+    --pad-well: #bec4d0;
+    --pad-d1: #7a8191;
+    --pad-d2: #464c5a;
+    --pad-d3: #1e222b;
+    --pad-accent: #c81e3a;
+    --pad-accent-soft: rgba(200, 30, 58, 0.14);
+    --pad-shadow: rgba(15, 23, 42, 0.22);
+    --pad-hi: rgba(255, 255, 255, 0.92);
+  }
+
+  :root.dark {
+    /* Dark Obsidian Redline Theme tokens for Controller */
+    --pad-bg: #07080b;
+    --pad-shell-1: #23252d;
+    --pad-shell-2: #121318;
+    --pad-lobe: #0e0f14;
+    --pad-edge: #3c404c;
+    --pad-ridge: rgba(255, 255, 255, 0.035);
+    --pad-btn-1: #2f323c;
+    --pad-btn-2: #17191f;
+    --pad-btn-edge: #464a57;
+    --pad-txt: #eef0f5;
+    --pad-dim: #8d93a3;
+    --pad-well: #090a0e;
+    --pad-d1: #9ea4b3;
+    --pad-d2: #4c515f;
+    --pad-d3: #1c1e26;
+    --pad-accent: #f43f5e;
+    --pad-accent-soft: rgba(244, 63, 94, 0.18);
+    --pad-shadow: rgba(0, 0, 0, 0.68);
+    --pad-hi: rgba(255, 255, 255, 0.14);
+  }
+
+  html,
+  body {
+    font-family: var(--font-sans);
+    overscroll-behavior: none;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+  }
+
+  .font-mono-tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ---------- Realistic Hardware Surface Finishes ---------- */
+.tex-carbon {
+  background-image:
+    radial-gradient(circle at 50% 0%, rgba(244, 63, 94, 0.08), transparent 55%),
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.018) 0px,
+      rgba(255, 255, 255, 0.018) 2px,
+      transparent 2px,
+      transparent 5px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(0, 0, 0, 0.14) 0px,
+      rgba(0, 0, 0, 0.14) 2px,
+      transparent 2px,
+      transparent 5px
+    );
+}
+
+.tex-brushed-metal {
+  background-image:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.06) 0%, transparent 45%, rgba(0, 0, 0, 0.18) 100%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.016) 0px,
+      rgba(255, 255, 255, 0.016) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+}
+
+.tex-ceramic {
+  background-image:
+    radial-gradient(ellipse at 50% -10%, rgba(255, 255, 255, 0.12), transparent 60%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.12));
+}
+
+/* ---------- Tactile Sculpted Gamepad Buttons ---------- */
+.pad-surface {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+  background-color: var(--pad-bg);
+}
+
+.pad-btn {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--pad-txt);
+  border-radius: 14px;
+  border: 1px solid var(--pad-btn-edge);
+  background-image:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 38%, rgba(0, 0, 0, 0.24) 100%),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.022) 0 1px, transparent 1px 4px),
+    linear-gradient(180deg, var(--pad-btn-1), var(--pad-btn-2));
+  box-shadow:
+    inset 0 1.5px 0 var(--pad-hi),
+    inset 0 -3px 4px rgba(0, 0, 0, 0.32),
+    0 0 0 1px rgba(225, 29, 72, 0.14),
+    0 6px 14px var(--pad-shadow);
+  transition: transform 80ms cubic-bezier(0.16, 1, 0.3, 1), filter 80ms ease, box-shadow 80ms ease, border-color 80ms ease;
+  will-change: transform;
+}
+
+.pad-btn::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.065);
+  pointer-events: none;
+}
+
+.pad-btn.is-pressed {
+  transform: translateY(1.5px) scale(0.955);
+  filter: brightness(1.16);
+  border-color: var(--pad-accent);
+  box-shadow:
+    inset 0 2px 10px rgba(244, 63, 94, 0.32),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.12),
+    0 0 18px rgba(244, 63, 94, 0.32),
+    0 2px 5px var(--pad-shadow);
+}
+
+.pad-btn-dia {
+  border-radius: 22%;
+  transform: rotate(45deg);
+}
+
+.pad-btn-dia.is-pressed {
+  transform: rotate(45deg) scale(0.92);
+}
+
+.pad-btn-dia .pad-label {
+  transform: rotate(-45deg);
+}
+
+.pad-face-crimson {
+  border-color: #b4233b;
+  color: #fff2f4;
+  background-image:
+    linear-gradient(145deg, rgba(255, 210, 218, 0.28) 0%, transparent 44%, rgba(65, 5, 16, 0.42) 100%),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 4px),
+    linear-gradient(155deg, #f43f5e, #881337);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 230, 235, 0.34),
+    inset 0 -3px 5px rgba(55, 4, 15, 0.48),
+    0 0 14px rgba(225, 29, 72, 0.32),
+    0 5px 12px rgba(0, 0, 0, 0.48);
+}
+
+.pad-face-crimson.is-pressed {
+  filter: brightness(1.22);
+  border-color: #fda4af;
+  box-shadow:
+    inset 0 2px 12px rgba(255, 225, 230, 0.4),
+    0 0 22px rgba(244, 63, 94, 0.58),
+    0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.pad-shoulder-trigger {
+  border-radius: 16px 16px 12px 12px;
+}
+
+.pad-mc-hit {
+  border-color: #be3b4c;
+  color: #ffe8eb;
+  background-image:
+    linear-gradient(150deg, rgba(255, 175, 185, 0.22), transparent 44%),
+    linear-gradient(180deg, #63222e, #2b131a);
+}
+
+.pad-mc-place {
+  border-color: #1f9d8c;
+  color: #dffff8;
+  background-image:
+    linear-gradient(150deg, rgba(145, 255, 235, 0.2), transparent 44%),
+    linear-gradient(180deg, #1b5951, #102d2d);
+}
+
+.pad-mc-jump {
+  border-color: #c28e2c;
+  color: #fff3d1;
+  background-image:
+    linear-gradient(150deg, rgba(255, 235, 175, 0.22), transparent 44%),
+    linear-gradient(180deg, #63491c, #2f2311);
+}
+
+.pad-mc-utility {
+  border-color: #546994;
+  color: #e6efff;
+  background-image:
+    linear-gradient(150deg, rgba(175, 200, 255, 0.16), transparent 44%),
+    linear-gradient(180deg, #2d3a57, #171f31);
+}
+
+/* ---------- Realistic Analog Stick Well & Concave Knurled Cap ---------- */
+.pad-stick-well {
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle, var(--pad-well) 0%, var(--pad-well) 56%, #2a2d36 59%, #14161c 74%, #e11d48 76.5%, #7f1229 80%, var(--pad-btn-1) 83%);
+  border: 1.5px solid rgba(110, 116, 132, 0.55);
+  box-shadow:
+    inset 0 8px 20px rgba(0, 0, 0, 0.68),
+    inset 0 -2px 6px rgba(255, 255, 255, 0.08),
+    0 0 14px rgba(225, 29, 72, 0.22),
+    0 5px 14px var(--pad-shadow);
+}
+
+.pad-stick-cap {
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle at 36% 28%, rgba(255, 255, 255, 0.28) 0%, transparent 34%),
+    repeating-radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.04) 0 1px, rgba(0, 0, 0, 0.18) 1px 3px),
+    radial-gradient(circle at 42% 35%, var(--pad-d1) 0%, var(--pad-d2) 52%, var(--pad-d3) 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.22),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.55),
+    0 8px 18px rgba(0, 0, 0, 0.65);
+  will-change: transform;
+}
+
+/* ---------- Capacitive Touchpad ---------- */
+.pad-touchpad {
+  border-radius: 20px;
+  border: 1px solid rgba(244, 63, 94, 0.34);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(244, 63, 94, 0.16), rgba(26, 29, 38, 0.45) 48%, rgba(8, 10, 14, 0.35) 100%),
+    radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px);
+  background-size: 100% 100%, 10px 10px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 28px rgba(225, 29, 72, 0.1),
+    0 4px 14px rgba(0, 0, 0, 0.34);
+}
+
+/* ---------- Steering Channel ---------- */
+.pad-steer-track {
+  border-radius: 18px;
+  border: 1px solid var(--pad-btn-edge);
+  background:
+    linear-gradient(180deg, var(--pad-well), var(--pad-btn-2));
+  box-shadow:
+    inset 0 6px 16px rgba(0, 0, 0, 0.55),
+    0 3px 10px var(--pad-shadow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pad-btn,
+  .pad-stick-cap {
+    transition: none !important;
+  }
+}

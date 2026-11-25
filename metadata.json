@@ -1,0 +1,6 @@
+{
+  "name": "RedlinePad — Cross-Platform Phone to Desktop Gamepad",
+  "description": "Turn your iOS or Android phone into a realistic, low-latency wireless Xbox 360 and keyboard/mouse controller for Windows with ViGEmBus integration and real-time cross-platform layout synchronization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
