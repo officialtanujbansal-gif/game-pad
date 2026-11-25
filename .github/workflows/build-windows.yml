@@ -1,0 +1,47 @@
+name: Build OmniSync Bridge for Windows
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "package.json"
+      - "server.ts"
+      - "electron/**"
+      - "public/**"
+      - "src/**"
+      - ".github/workflows/build-windows.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  windows-build:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build React renderer and bundled Node server
+        run: npm run build:desktop
+
+      - name: Package NSIS installer and portable EXE
+        run: npx electron-builder --win nsis portable --x64
+
+      - name: Upload Windows executables
+        uses: actions/upload-artifact@v4
+        with:
+          name: OmniSync-Bridge-Windows
+          path: release/*.exe
+          if-no-files-found: error
+          retention-days: 30
