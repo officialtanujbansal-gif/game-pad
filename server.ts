@@ -22,7 +22,12 @@ const PORT = Number(process.env.PORT || 3000);
 const IS_PROD = process.env.NODE_ENV === 'production';
 
 // Persistent sync storage confined strictly inside project data directory
-const DATA_DIR = path.resolve(__dirname, 'data');
+const DATA_DIR = process.env.APP_DATA_DIR
+  ? path.resolve(process.env.APP_DATA_DIR)
+  : path.resolve(__dirname, 'data');
+const PUBLIC_DIR = process.env.APP_PUBLIC_DIR
+  ? path.resolve(process.env.APP_PUBLIC_DIR)
+  : path.resolve(__dirname, 'public');
 const SYNC_STORE_PATH = path.resolve(DATA_DIR, 'sync-store.json');
 
 interface RoomState {
@@ -297,7 +302,7 @@ function broadcastRoomSettings(pin: string, settings: SyncedSettings, excludeId?
 
 function loadEmbeddedControllerB64(): string {
   try {
-    const htmlPath = path.resolve(__dirname, 'public/assets/aistudio/gamepad_controller_v21_30dcfafa.html');
+    const htmlPath = path.resolve(PUBLIC_DIR, 'assets/aistudio/gamepad_controller_v21_30dcfafa.html');
     if (fs.existsSync(htmlPath)) {
       return fs.readFileSync(htmlPath).toString('base64');
     }
@@ -1071,7 +1076,9 @@ async function startServer() {
 
     app.use(vite.middlewares);
   } else {
-    const distPath = path.resolve(__dirname, 'dist');
+    const distPath = process.env.APP_DIST_DIR
+      ? path.resolve(process.env.APP_DIST_DIR)
+      : path.resolve(__dirname, 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res, next) => {
       if (req.path.startsWith('/api/') || req.path === '/ws') {
@@ -1250,9 +1257,32 @@ async function startServer() {
     });
   });
 
-  server.listen(PORT, '0.0.0.0', () => {
-    console.log(`RedlinePad full-stack server running on http://0.0.0.0:${PORT}`);
+  await new Promise<void>((resolve, reject) => {
+    const onError = (error: Error) => reject(error);
+    server.once('error', onError);
+    server.listen(PORT, '0.0.0.0', () => {
+      server.off('error', onError);
+      console.log(`OmniSync Bridge server running on http://0.0.0.0:${PORT}`);
+      resolve();
+    });
   });
+
+  // The desktop shell owns the server lifecycle and closes it on application exit.
+  return async () => {
+    for (const client of wss.clients) client.terminate();
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => error ? reject(error) : resolve());
+      server.closeAllConnections?.();
+    });
+  };
 }
 
-startServer();
+export { startServer };
+
+// Electron imports the server and starts it explicitly. Keep direct CLI/dev startup too.
+if (process.env.ELECTRON_MAIN_PROCESS !== 'true') {
+  startServer().catch((error) => {
+    console.error('OmniSync server failed to start:', error);
+    process.exitCode = 1;
+  });
+}
