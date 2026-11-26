@@ -843,27 +843,48 @@ if __name__ == "__main__":
 function buildWindowsLauncherBat(defaultPin: string): string {
   const safePin = isValidPin(defaultPin) ? defaultPin : '123456';
   return `@echo off
-title RedlinePad Windows ViGEmBus Bridge
-color 0C
-echo ============================================================
-echo   RedlinePad - Windows Xbox 360 & Keyboard/Mouse Bridge
-echo ============================================================
-echo.
-where python >nul 2>nul
-if errorlevel 1 (
-  echo [!] Python 3 is not installed. Please install Python 3 from python.org
-  pause
-  exit /b 1
+setlocal
+title OmniSync Bridge Windows Receiver
+set "PIN=%~1"
+if not defined PIN set "PIN=${safePin}"
+set "RELAY=%~2"
+set "PYTHON_CMD="
+where py >nul 2>nul
+if not errorlevel 1 (
+  set "PYTHON_CMD=py -3"
+) else (
+  where python >nul 2>nul
+  if not errorlevel 1 set "PYTHON_CMD=python"
 )
-echo [*] Checking required Python packages (vgamepad + websockets)...
-python -m pip install --quiet vgamepad websockets
-echo.
-echo [*] Starting RedlinePad Bridge with Pairing PIN: ${safePin}
-echo     Make sure ViGEmBus driver is installed from:
-echo     https://github.com/nefarius/ViGEmBus/releases
-echo.
-python "%~dp0redlinepad_windows_receiver.py" --pin ${safePin}
-pause
+if not defined PYTHON_CMD (
+  echo OMNISYNC_ERROR_PYTHON_MISSING
+  echo [!] Python 3 is required. Install Python 3 from https://www.python.org/downloads/windows/
+  echo [!] During setup, enable "Add python.exe to PATH", then restart OmniSync Bridge.
+  if not defined OMNISYNC_AUTOSTART pause
+  exit /b 10
+)
+echo [*] Checking receiver Python packages...
+%PYTHON_CMD% -c "import vgamepad, websockets" >nul 2>nul
+if errorlevel 1 (
+  echo [*] Installing vgamepad and websockets for the current Windows user...
+  %PYTHON_CMD% -m pip install --user --disable-pip-version-check --retries 2 --timeout 20 vgamepad websockets
+  if errorlevel 1 (
+    echo OMNISYNC_ERROR_PYTHON_PACKAGES
+    echo [!] Could not install receiver packages. Check your internet connection and Python pip.
+    if not defined OMNISYNC_AUTOSTART pause
+    exit /b 11
+  )
+)
+echo [*] Starting Windows controller receiver...
+echo [*] ViGEmBus must already be installed for virtual Xbox controller output.
+if defined RELAY (
+  %PYTHON_CMD% "%~dp0redlinepad_windows_receiver.py" --pin "%PIN%" --relay "%RELAY%"
+) else (
+  %PYTHON_CMD% "%~dp0redlinepad_windows_receiver.py" --pin "%PIN%"
+)
+set "EXIT_CODE=%ERRORLEVEL%"
+if not defined OMNISYNC_AUTOSTART pause
+exit /b %EXIT_CODE%
 `;
 }
 
