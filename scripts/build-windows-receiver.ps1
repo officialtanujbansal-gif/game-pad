@@ -52,12 +52,12 @@ try {
   Write-Host "Compiling a self-contained Windows receiver (Python runtime and packages included)..."
   $distPath = Join-Path $repoRoot "receiver-dist"
   $workPath = Join-Path $repoRoot "receiver-build"
-  python -m PyInstaller --clean --noconfirm --onefile --console --name "OmniSync-Windows-Receiver" --distpath $distPath --workpath $workPath --specpath $workPath --collect-all websockets --collect-all vgamepad $receiverSource
+  python -m PyInstaller --clean --noconfirm --onedir --console --name "OmniSync-Windows-Receiver" --distpath $distPath --workpath $workPath --specpath $workPath --collect-all websockets --collect-all vgamepad $receiverSource
   if ($LASTEXITCODE -ne 0) {
     throw "PyInstaller failed with exit code $LASTEXITCODE."
   }
 
-  $receiverExe = Join-Path $distPath "OmniSync-Windows-Receiver.exe"
+  $receiverExe = Join-Path $distPath "OmniSync-Windows-Receiver/OmniSync-Windows-Receiver.exe"
   if (-not (Test-Path $receiverExe) -or (Get-Item $receiverExe).Length -lt 1000000) {
     throw "The compiled Windows receiver executable was not produced."
   }
