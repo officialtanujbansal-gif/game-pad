@@ -17,6 +17,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: omnisync-windows-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   windows-build:
     runs-on: windows-latest
