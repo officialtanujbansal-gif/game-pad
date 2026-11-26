@@ -245,15 +245,19 @@ function startWindowsReceiver(pin) {
     pairingPinConfigured: true,
   });
 
-  // Keep cmd.exe attached to the BAT. The BAT then runs Python in this same
-  // process tree, so stdout/stderr stay visible in startup.log.
-  const command = `call "${launcher}" "${pin}" "${relayUrl}"`;
-  const child = spawn('cmd.exe', ['/d', '/s', '/c', command], {
+  // Launch the BAT from its working directory. Passing runtime settings through
+  // the environment avoids cmd.exe's fragile nested-quote parsing for file paths.
+  const child = spawn(process.env.ComSpec || 'cmd.exe', ['/d', '/c', 'Launch_RedlinePad_Windows.bat'], {
     cwd: receiverDir,
     windowsHide: true,
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: false,
-    env: { ...process.env, OMNISYNC_AUTOSTART: '1' },
+    env: {
+      ...process.env,
+      OMNISYNC_AUTOSTART: '1',
+      OMNISYNC_PIN: String(pin),
+      OMNISYNC_RELAY: relayUrl,
+    },
   });
   receiverProcess = child;
   receiverPin = pin;
