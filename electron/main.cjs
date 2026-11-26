@@ -171,7 +171,7 @@ function startWindowsReceiver(pin) {
     return { started: false, reason: 'development-build' };
   }
 
-  const executable = path.join(process.resourcesPath, 'receiver', 'OmniSync-Windows-Receiver.exe');
+  const executable = path.join(process.resourcesPath, 'receiver', 'OmniSync-Windows-Receiver', 'OmniSync-Windows-Receiver.exe');
   if (!fs.existsSync(executable)) {
     const message = `Bundled Windows receiver is missing: ${executable}`;
     log('ERROR', message);
