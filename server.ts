@@ -4,7 +4,6 @@ import fs from 'fs';
 import http from 'http';
 import os from 'os';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { WebSocket, WebSocketServer } from 'ws';
 import {
   ConnectedDevice,
@@ -15,8 +14,8 @@ import {
   VigemReleaseInfo,
 } from './src/types/gamepad.ts';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Resolve the app root explicitly; this also works in the packaged CommonJS server.
+const __dirname = path.resolve(process.env.APP_ROOT_DIR || process.cwd());
 
 const PORT = Number(process.env.PORT || 3000);
 const IS_PROD = process.env.NODE_ENV === 'production';
