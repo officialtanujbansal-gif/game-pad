@@ -1,4 +1,6 @@
 const { app, BrowserWindow, dialog, shell } = require('electron');
+const { ipcMain } = require('electron');
+const { spawn } = require('node:child_process');
 const net = require('node:net');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -9,6 +11,9 @@ let stopBackend = null;
 let backendStarted = false;
 let quitting = false;
 let logFile = null;
+let receiverProcess = null;
+let receiverPin = null;
+let receiverMissingDialogShown = false;
 
 function log(level, message, detail) {
   const suffix = detail === undefined
@@ -84,6 +89,7 @@ function applicationPaths() {
     server: path.join(appRoot, 'dist-server', 'server.cjs'),
     renderer: path.join(appRoot, 'dist'),
     public: path.join(appRoot, 'public'),
+    preload: path.join(appRoot, 'electron', 'preload.cjs'),
     root: appRoot,
   };
 }
@@ -141,6 +147,100 @@ async function startBackend() {
   log('INFO', 'Bundled Node server started successfully');
 }
 
+
+function stopWindowsReceiver(reason = 'application shutdown') {
+  if (!receiverProcess) return;
+  const child = receiverProcess;
+  receiverProcess = null;
+  receiverPin = null;
+  log('INFO', `Stopping Windows receiver: ${reason}`);
+  try {
+    child.kill();
+  } catch (error) {
+    log('WARN', 'Could not stop Windows receiver cleanly', error);
+  }
+}
+
+function startWindowsReceiver(pin) {
+  if (process.platform !== 'win32') return { started: false, reason: 'not-windows' };
+  if (!/^\\d{4,12}$/.test(String(pin || ''))) {
+    throw new Error('The pairing PIN must contain 4 to 12 digits before the Windows receiver can start.');
+  }
+  if (!app.isPackaged) {
+    log('WARN', 'Automatic Windows receiver launch is available in the packaged desktop build only.');
+    return { started: false, reason: 'development-build' };
+  }
+
+  const executable = path.join(process.resourcesPath, 'receiver', 'OmniSync-Windows-Receiver.exe');
+  if (!fs.existsSync(executable)) {
+    const message = `Bundled Windows receiver is missing: ${executable}`;
+    log('ERROR', message);
+    if (!receiverMissingDialogShown) {
+      receiverMissingDialogShown = true;
+      dialog.showErrorBox(
+        'OmniSync Windows Receiver is missing',
+        `This installation does not include the automatic controller receiver. Reinstall the latest OmniSync Bridge build.\\n\\n${message}\\n\\nDiagnostic log: ${getLogPath()}`
+      );
+    }
+    throw new Error(message);
+  }
+
+  if (receiverProcess && receiverPin === pin && receiverProcess.exitCode === null) {
+    return { started: true, alreadyRunning: true };
+  }
+
+  stopWindowsReceiver('pairing PIN changed');
+  const relayUrl = `ws://127.0.0.1:${serverPort}/ws`;
+  log('INFO', 'Starting bundled Windows receiver', { executable, pin, relayUrl });
+
+  const child = spawn(executable, ['--pin', pin, '--relay', relayUrl], {
+    windowsHide: true,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    detached: false,
+  });
+  receiverProcess = child;
+  receiverPin = pin;
+
+  child.stdout.on('data', (chunk) => {
+    for (const line of chunk.toString('utf8').split(/\\r?\\n/).filter(Boolean)) {
+      log('INFO', `[receiver] ${line}`);
+    }
+  });
+  child.stderr.on('data', (chunk) => {
+    for (const line of chunk.toString('utf8').split(/\\r?\\n/).filter(Boolean)) {
+      log('WARN', `[receiver] ${line}`);
+    }
+  });
+  child.on('spawn', () => log('INFO', 'Bundled Windows receiver process spawned'));
+  child.on('error', (error) => {
+    if (receiverProcess === child) {
+      receiverProcess = null;
+      receiverPin = null;
+    }
+    log('ERROR', 'Bundled Windows receiver failed to start', error);
+  });
+  child.on('exit', (code, signal) => {
+    if (receiverProcess === child) {
+      receiverProcess = null;
+      receiverPin = null;
+    }
+    log(code === 0 ? 'INFO' : 'ERROR', 'Windows receiver process exited', { code, signal });
+  });
+
+  return { started: true, alreadyRunning: false };
+}
+
+ipcMain.handle('omnisync:receiver:set-pin', (event, pin) => {
+  if (!mainWindow || event.sender !== mainWindow.webContents) {
+    throw new Error('Receiver startup request came from an untrusted window.');
+  }
+  const frameUrl = event.senderFrame && event.senderFrame.url ? event.senderFrame.url : '';
+  if (!frameUrl.startsWith(`http://127.0.0.1:${serverPort}/`)) {
+    throw new Error('Receiver startup request did not originate from the local OmniSync app.');
+  }
+  return startWindowsReceiver(String(pin || ''));
+});
+
 async function createWindow() {
   if (!backendStarted) await startBackend();
 
@@ -156,6 +256,7 @@ async function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      preload: applicationPaths().preload,
     },
   });
 
@@ -242,6 +343,7 @@ if (hasSingleInstanceLock) {
 app.on('before-quit', () => {
   quitting = true;
   log('INFO', 'Application is quitting');
+  stopWindowsReceiver('application shutdown');
   if (stopBackend) {
     const stop = stopBackend;
     stopBackend = null;
