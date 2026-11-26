@@ -93,8 +93,8 @@
     },
     "extraResources": [
       {
-        "from": "receiver-dist/OmniSync-Windows-Receiver.exe",
-        "to": "receiver/OmniSync-Windows-Receiver.exe"
+        "from": "receiver-dist/OmniSync-Windows-Receiver",
+        "to": "receiver/OmniSync-Windows-Receiver"
       }
     ]
   }
