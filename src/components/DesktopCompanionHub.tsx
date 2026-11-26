@@ -881,10 +881,18 @@ export const DesktopCompanionHub: React.FC<DesktopCompanionHubProps> = ({
                     Windows PC Receiver Bridge
                   </h2>
                   <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                    Your upgraded V22 Python receiver bridges BOTH Cross-Platform Cloud Relay and Direct Local Wi-Fi (port 8765) directly into ViGEmBus Xbox 360 and Windows SendInput keyboard/mouse.
+                    In the installed Windows desktop app, the receiver starts automatically when the pairing PIN is ready. No separate Python installation or BAT launch is required. ViGEmBus must be installed once for virtual Xbox controller output.
                   </p>
 
-                  <div className="mt-5 grid grid-cols-1 gap-3">
+                  <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-xs leading-relaxed text-zinc-700 dark:text-zinc-300">
+                    <strong className="text-emerald-700 dark:text-emerald-400">Automatic startup enabled in desktop build 1.0.2+</strong>
+                    <div className="mt-1">The bundled receiver follows this app's current PIN and reconnects to the local PC relay. The downloads below are manual fallback tools only.</div>
+                  </div>
+
+                  <div className="mt-5 text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                    Manual fallback downloads
+                  </div>
+                  <div className="mt-2 grid grid-cols-1 gap-3">
                     <a
                       href={`/api/download/windows-receiver?pin=${encodeURIComponent(pin)}`}
                       download="redlinepad_windows_receiver.py"
@@ -894,7 +902,7 @@ export const DesktopCompanionHub: React.FC<DesktopCompanionHubProps> = ({
                         <Download className="h-4 w-4 text-[#e11d48]" />
                         <span>redlinepad_windows_receiver.py</span>
                       </span>
-                      <span className="font-mono-tabular text-xs text-zinc-500">Python 3</span>
+                      <span className="font-mono-tabular text-xs text-zinc-500">Manual</span>
                     </a>
 
                     <a
@@ -906,7 +914,7 @@ export const DesktopCompanionHub: React.FC<DesktopCompanionHubProps> = ({
                         <Terminal className="h-4 w-4 text-emerald-500" />
                         <span>Launch_RedlinePad_Windows.bat</span>
                       </span>
-                      <span className="font-mono-tabular text-xs text-zinc-500">1-Click Start</span>
+                      <span className="font-mono-tabular text-xs text-zinc-500">Fallback</span>
                     </a>
                   </div>
 
@@ -933,15 +941,15 @@ export const DesktopCompanionHub: React.FC<DesktopCompanionHubProps> = ({
                 <ol className="space-y-2.5 border-t border-zinc-200 pt-4 text-xs text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
                   <li className="flex items-start gap-2">
                     <span className="font-mono-tabular font-bold text-[#e11d48]">01.</span>
-                    <span>Install the ViGEmBus .exe driver from the GitHub release on the left (once).</span>
+                    <span>Install the ViGEmBus driver from the GitHub release on the left once, then restart Windows if its installer requests it.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="font-mono-tabular font-bold text-[#e11d48]">02.</span>
-                    <span>Place both downloaded files in the same folder and double-click Launch_RedlinePad_Windows.bat.</span>
+                    <span>Open OmniSync Bridge desktop build 1.0.2 or newer. Its bundled Windows receiver starts automatically using the displayed PIN.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="font-mono-tabular font-bold text-[#e11d48]">03.</span>
-                    <span>Open RedlinePad on your iPhone or Android with PIN {pin} — Windows registers an instant Xbox 360 controller.</span>
+                    <span>Connect the phone with PIN {pin}. Confirm the Windows Receiver appears under Connected Devices; test the virtual pad with Win + R, then joy.cpl.</span>
                   </li>
                 </ol>
               </section>
