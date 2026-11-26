@@ -845,9 +845,11 @@ function buildWindowsLauncherBat(defaultPin: string): string {
   return `@echo off
 setlocal
 title OmniSync Bridge Windows Receiver
-set "PIN=%~1"
+set "PIN=%OMNISYNC_PIN%"
+if not defined PIN set "PIN=%~1"
 if not defined PIN set "PIN=${safePin}"
-set "RELAY=%~2"
+set "RELAY=%OMNISYNC_RELAY%"
+if not defined RELAY set "RELAY=%~2"
 set "PYTHON_CMD="
 where py >nul 2>nul
 if not errorlevel 1 (
