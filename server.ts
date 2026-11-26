@@ -15,7 +15,7 @@ import {
 } from './src/types/gamepad.ts';
 
 // Resolve the app root explicitly; this also works in the packaged CommonJS server.
-const __dirname = path.resolve(process.env.APP_ROOT_DIR || process.cwd());
+const APP_ROOT_DIR = path.resolve(process.env.APP_ROOT_DIR || process.cwd());
 
 const PORT = Number(process.env.PORT || 3000);
 const IS_PROD = process.env.NODE_ENV === 'production';
@@ -23,10 +23,10 @@ const IS_PROD = process.env.NODE_ENV === 'production';
 // Persistent sync storage confined strictly inside project data directory
 const DATA_DIR = process.env.APP_DATA_DIR
   ? path.resolve(process.env.APP_DATA_DIR)
-  : path.resolve(__dirname, 'data');
+  : path.resolve(APP_ROOT_DIR, 'data');
 const PUBLIC_DIR = process.env.APP_PUBLIC_DIR
   ? path.resolve(process.env.APP_PUBLIC_DIR)
-  : path.resolve(__dirname, 'public');
+  : path.resolve(APP_ROOT_DIR, 'public');
 const SYNC_STORE_PATH = path.resolve(DATA_DIR, 'sync-store.json');
 
 interface RoomState {
@@ -1077,7 +1077,7 @@ async function startServer() {
   } else {
     const distPath = process.env.APP_DIST_DIR
       ? path.resolve(process.env.APP_DIST_DIR)
-      : path.resolve(__dirname, 'dist');
+      : path.resolve(APP_ROOT_DIR, 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res, next) => {
       if (req.path.startsWith('/api/') || req.path === '/ws') {
