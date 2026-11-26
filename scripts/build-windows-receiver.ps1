@@ -3,10 +3,10 @@ $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $port = 31847
 $tempRoot = if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { [System.IO.Path]::GetTempPath() }
-$receiverSource = Join-Path $tempRoot "omnisync_windows_receiver.py"
 $serverStdout = Join-Path $tempRoot "omnisync-build-server.out.log"
 $serverStderr = Join-Path $tempRoot "omnisync-build-server.err.log"
 $serverProcess = $null
+$receiverDir = Join-Path $repoRoot "receiver-dist"
 
 $env:PORT = "$port"
 $env:NODE_ENV = "production"
@@ -17,11 +17,10 @@ $env:APP_PUBLIC_DIR = Join-Path $repoRoot "public"
 $env:APP_DATA_DIR = Join-Path $tempRoot "omnisync-build-data"
 
 New-Item -ItemType Directory -Force -Path $env:APP_DATA_DIR | Out-Null
-New-Item -ItemType Directory -Force -Path (Join-Path $repoRoot "receiver-dist") | Out-Null
-New-Item -ItemType Directory -Force -Path (Join-Path $repoRoot "receiver-build") | Out-Null
+New-Item -ItemType Directory -Force -Path $receiverDir | Out-Null
 
 try {
-  Write-Host "Starting temporary local relay to generate the receiver source..."
+  Write-Host "Starting temporary local relay to generate the receiver script and launcher..."
   $serverProcess = Start-Process -FilePath "node" -ArgumentList "scripts/start-build-server.cjs" -WorkingDirectory $repoRoot -PassThru -WindowStyle Hidden -RedirectStandardOutput $serverStdout -RedirectStandardError $serverStderr
 
   $healthy = $false
@@ -43,32 +42,30 @@ try {
     throw "Temporary relay server did not become healthy. Output: $serverStdout $serverStderr"
   }
 
-  Write-Host "Generating the Windows receiver source from the same server implementation used by the app..."
-  Invoke-WebRequest -Uri "http://127.0.0.1:$port/api/download/windows-receiver?pin=123456" -OutFile $receiverSource -UseBasicParsing
-  if (-not (Test-Path $receiverSource) -or (Get-Item $receiverSource).Length -lt 10000) {
-    throw "Generated receiver source is missing or unexpectedly small."
+  Write-Host "Downloading generated Windows receiver Python script..."
+  $pythonFile = Join-Path $receiverDir "redlinepad_windows_receiver.py"
+  Invoke-WebRequest -Uri "http://127.0.0.1:$port/api/download/windows-receiver?pin=123456" -OutFile $pythonFile -UseBasicParsing
+  if (-not (Test-Path $pythonFile) -or (Get-Item $pythonFile).Length -lt 10000) {
+    throw "Generated Python receiver is missing or unexpectedly small."
   }
 
-  Write-Host "Compiling a self-contained Windows receiver (Python runtime and packages included)..."
-  $distPath = Join-Path $repoRoot "receiver-dist"
-  $workPath = Join-Path $repoRoot "receiver-build"
-  python -m PyInstaller --clean --noconfirm --onedir --console --name "OmniSync-Windows-Receiver" --distpath $distPath --workpath $workPath --specpath $workPath --collect-all websockets --collect-all vgamepad $receiverSource
-  if ($LASTEXITCODE -ne 0) {
-    throw "PyInstaller failed with exit code $LASTEXITCODE."
+  Write-Host "Downloading the matching Windows BAT launcher..."
+  $launcherFile = Join-Path $receiverDir "Launch_RedlinePad_Windows.bat"
+  Invoke-WebRequest -Uri "http://127.0.0.1:$port/api/download/windows-launcher?pin=123456" -OutFile $launcherFile -UseBasicParsing
+  if (-not (Test-Path $launcherFile) -or (Get-Item $launcherFile).Length -lt 500) {
+    throw "Generated Windows launcher is missing or unexpectedly small."
   }
 
-  $receiverExe = Join-Path $distPath "OmniSync-Windows-Receiver/OmniSync-Windows-Receiver.exe"
-  if (-not (Test-Path $receiverExe) -or (Get-Item $receiverExe).Length -lt 1000000) {
-    throw "The compiled Windows receiver executable was not produced."
+  $launcherText = Get-Content -Raw $launcherFile
+  foreach ($required in @("OMNISYNC_AUTOSTART", "vgamepad", "websockets", "redlinepad_windows_receiver.py", "--relay")) {
+    if (-not $launcherText.Contains($required)) {
+      throw "Generated Windows launcher is missing expected feature: $required"
+    }
   }
 
-  Write-Host "Checking the compiled receiver executable..."
-  & $receiverExe --help | Out-Host
-  if ($LASTEXITCODE -ne 0) {
-    throw "The compiled receiver failed its --help smoke test."
-  }
-
-  Write-Host "Bundled receiver ready: $receiverExe"
+  Write-Host "Receiver script and BAT launcher are ready for Electron extraResources."
+  Write-Host "Python receiver: $pythonFile"
+  Write-Host "BAT launcher: $launcherFile"
 }
 finally {
   if ($serverProcess -and -not $serverProcess.HasExited) {
