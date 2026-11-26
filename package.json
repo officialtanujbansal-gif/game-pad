@@ -1,7 +1,7 @@
 {
   "name": "omnisync-bridge",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "engines": {
     "node": ">=22.12.0"
@@ -11,12 +11,12 @@
     "start": "node dist-server/server.cjs",
     "build": "vite build",
     "preview": "vite preview",
-    "clean": "node -e \"for (const p of ['dist','dist-server','release']) require('node:fs').rmSync(p,{recursive:true,force:true})\"",
+    "clean": "node -e \"for (const p of ['dist','dist-server','release','receiver-dist','receiver-build']) require('node:fs').rmSync(p,{recursive:true,force:true})\"",
     "lint": "tsc --noEmit",
     "build:renderer": "vite build",
     "build:server": "esbuild server.ts --bundle --platform=node --format=cjs --target=node22 --external:vite --outfile=dist-server/server.cjs",
     "build:desktop": "npm run build:renderer && npm run build:server",
-    "dist:windows": "npm run build:desktop && electron-builder --win nsis portable --x64 --publish never",
+    "dist:windows": "npm run build:desktop && powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows-receiver.ps1 && electron-builder --win nsis portable --x64 --publish never",
     "test:desktop-server": "node scripts/smoke-server.cjs"
   },
   "dependencies": {},
@@ -90,6 +90,12 @@
     },
     "portable": {
       "artifactName": "${productName}-${version}-Portable.${ext}"
-    }
+    },
+    "extraResources": [
+      {
+        "from": "receiver-dist/OmniSync-Windows-Receiver.exe",
+        "to": "receiver/OmniSync-Windows-Receiver.exe"
+      }
+    ]
   }
 }
