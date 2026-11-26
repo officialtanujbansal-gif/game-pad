@@ -1,6 +1,6 @@
 const { app, BrowserWindow, dialog, shell } = require('electron');
 const { ipcMain } = require('electron');
-const { spawn } = require('node:child_process');
+const { spawn, spawnSync } = require('node:child_process');
 const net = require('node:net');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -154,16 +154,46 @@ function stopWindowsReceiver(reason = 'application shutdown') {
   receiverProcess = null;
   receiverPin = null;
   log('INFO', `Stopping Windows receiver: ${reason}`);
+
+  // The BAT runs Python as its child. Kill the complete process tree so no
+  // orphan receiver keeps sending input after OmniSync exits or changes PIN.
+  if (child.pid) {
+    try {
+      spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], {
+        windowsHide: true,
+        stdio: 'ignore',
+        timeout: 5000,
+      });
+    } catch (error) {
+      log('WARN', 'Could not terminate the Windows receiver process tree', error);
+    }
+  }
   try {
     child.kill();
   } catch (error) {
-    log('WARN', 'Could not stop Windows receiver cleanly', error);
+    log('WARN', 'Could not stop Windows receiver launcher cleanly', error);
   }
+}
+
+function hasPython3() {
+  const candidates = [
+    { command: 'py', args: ['-3', '--version'] },
+    { command: 'python', args: ['--version'] },
+  ];
+  for (const candidate of candidates) {
+    const result = spawnSync(candidate.command, candidate.args, {
+      windowsHide: true,
+      stdio: 'ignore',
+      timeout: 5000,
+    });
+    if (!result.error && result.status === 0) return true;
+  }
+  return false;
 }
 
 function startWindowsReceiver(pin) {
   if (process.platform !== 'win32') return { started: false, reason: 'not-windows' };
-  if (!/^\d{4,12}$/.test(String(pin || ''))) {
+  if (!/^\\d{4,12}$/.test(String(pin || ''))) {
     throw new Error('The pairing PIN must contain 4 to 12 digits before the Windows receiver can start.');
   }
   if (!app.isPackaged) {
@@ -171,18 +201,36 @@ function startWindowsReceiver(pin) {
     return { started: false, reason: 'development-build' };
   }
 
-  const executable = path.join(process.resourcesPath, 'receiver', 'OmniSync-Windows-Receiver', 'OmniSync-Windows-Receiver.exe');
-  if (!fs.existsSync(executable)) {
-    const message = `Bundled Windows receiver is missing: ${executable}`;
+  const receiverDir = path.join(process.resourcesPath, 'receiver');
+  const receiverScript = path.join(receiverDir, 'redlinepad_windows_receiver.py');
+  const launcher = path.join(receiverDir, 'Launch_RedlinePad_Windows.bat');
+
+  for (const requiredFile of [receiverScript, launcher]) {
+    if (!fs.existsSync(requiredFile)) {
+      const message = `Bundled Windows receiver file is missing: ${requiredFile}`;
+      log('ERROR', message);
+      if (!receiverMissingDialogShown) {
+        receiverMissingDialogShown = true;
+        dialog.showErrorBox(
+          'OmniSync Windows Receiver is missing',
+          `This installation does not include the automatic controller receiver. Reinstall the latest OmniSync Bridge build.\\n\\n${message}\\n\\nDiagnostic log: ${getLogPath()}`
+        );
+      }
+      throw new Error(message);
+    }
+  }
+
+  if (!hasPython3()) {
+    const message = 'Python 3 was not found. Install Python 3 for Windows, enable "Add python.exe to PATH", then restart OmniSync Bridge.';
     log('ERROR', message);
     if (!receiverMissingDialogShown) {
       receiverMissingDialogShown = true;
       dialog.showErrorBox(
-        'OmniSync Windows Receiver is missing',
-        `This installation does not include the automatic controller receiver. Reinstall the latest OmniSync Bridge build.\\n\\n${message}\\n\\nDiagnostic log: ${getLogPath()}`
+        'Python 3 is required for controller output',
+        `${message}\\n\\nDownload: https://www.python.org/downloads/windows/\\n\\nDiagnostic log: ${getLogPath()}`
       );
     }
-    throw new Error(message);
+    return { started: false, reason: 'python-missing' };
   }
 
   if (receiverProcess && receiverPin === pin && receiverProcess.exitCode === null) {
@@ -191,42 +239,59 @@ function startWindowsReceiver(pin) {
 
   stopWindowsReceiver('pairing PIN changed');
   const relayUrl = `ws://127.0.0.1:${serverPort}/ws`;
-  log('INFO', 'Starting bundled Windows receiver', { executable, relayUrl, pairingPinConfigured: true });
+  log('INFO', 'Starting Windows receiver through bundled BAT launcher', {
+    launcher,
+    relayUrl,
+    pairingPinConfigured: true,
+  });
 
-  const child = spawn(executable, ['--pin', pin, '--relay', relayUrl], {
+  // Keep cmd.exe attached to the BAT. The BAT then runs Python in this same
+  // process tree, so stdout/stderr stay visible in startup.log.
+  const command = `call "${launcher}" "${pin}" "${relayUrl}"`;
+  const child = spawn('cmd.exe', ['/d', '/s', '/c', command], {
+    cwd: receiverDir,
     windowsHide: true,
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: false,
+    env: { ...process.env, OMNISYNC_AUTOSTART: '1' },
   });
   receiverProcess = child;
   receiverPin = pin;
 
-  child.stdout.on('data', (chunk) => {
-    for (const line of chunk.toString('utf8').split(/\r?\n/).filter(Boolean)) {
-      const safeLine = line.replace(/(PIN\s*:?\s*)\d{4,12}/gi, '$1[redacted]');
-      log('INFO', `[receiver] ${safeLine}`);
+  const logReceiverLines = (level, chunk) => {
+    for (const line of chunk.toString('utf8').split(/\\r?\\n/).filter(Boolean)) {
+      const safeLine = line.replace(/(PIN\\s*:?\\s*)\\d{4,12}/gi, '$1[redacted]');
+      log(level, `[receiver] ${safeLine}`);
     }
-  });
-  child.stderr.on('data', (chunk) => {
-    for (const line of chunk.toString('utf8').split(/\r?\n/).filter(Boolean)) {
-      const safeLine = line.replace(/(PIN\s*:?\s*)\d{4,12}/gi, '$1[redacted]');
-      log('WARN', `[receiver] ${safeLine}`);
-    }
-  });
-  child.on('spawn', () => log('INFO', 'Bundled Windows receiver process spawned'));
+  };
+  child.stdout.on('data', (chunk) => logReceiverLines('INFO', chunk));
+  child.stderr.on('data', (chunk) => logReceiverLines('WARN', chunk));
+  child.on('spawn', () => log('INFO', 'Windows receiver BAT launcher spawned'));
   child.on('error', (error) => {
     if (receiverProcess === child) {
       receiverProcess = null;
       receiverPin = null;
     }
-    log('ERROR', 'Bundled Windows receiver failed to start', error);
+    log('ERROR', 'Windows receiver BAT launcher failed to start', error);
+    if (!quitting) {
+      dialog.showErrorBox(
+        'OmniSync Windows Receiver could not start',
+        `${error.message || error}\\n\\nDiagnostic log: ${getLogPath()}`
+      );
+    }
   });
   child.on('exit', (code, signal) => {
     if (receiverProcess === child) {
       receiverProcess = null;
       receiverPin = null;
     }
-    log(code === 0 ? 'INFO' : 'ERROR', 'Windows receiver process exited', { code, signal });
+    log(code === 0 ? 'INFO' : 'ERROR', 'Windows receiver launcher exited', { code, signal });
+    if (code !== 0 && !quitting) {
+      dialog.showErrorBox(
+        'OmniSync Windows Receiver stopped',
+        `The receiver exited with code ${code}. Check Python and package installation, then inspect the diagnostic log: ${getLogPath()}`
+      );
+    }
   });
 
   return { started: true, alreadyRunning: false };
