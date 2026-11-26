@@ -163,7 +163,7 @@ function stopWindowsReceiver(reason = 'application shutdown') {
 
 function startWindowsReceiver(pin) {
   if (process.platform !== 'win32') return { started: false, reason: 'not-windows' };
-  if (!/^\\d{4,12}$/.test(String(pin || ''))) {
+  if (!/^\d{4,12}$/.test(String(pin || ''))) {
     throw new Error('The pairing PIN must contain 4 to 12 digits before the Windows receiver can start.');
   }
   if (!app.isPackaged) {
@@ -202,12 +202,12 @@ function startWindowsReceiver(pin) {
   receiverPin = pin;
 
   child.stdout.on('data', (chunk) => {
-    for (const line of chunk.toString('utf8').split(/\\r?\\n/).filter(Boolean)) {
+    for (const line of chunk.toString('utf8').split(/\r?\n/).filter(Boolean)) {
       log('INFO', `[receiver] ${line}`);
     }
   });
   child.stderr.on('data', (chunk) => {
-    for (const line of chunk.toString('utf8').split(/\\r?\\n/).filter(Boolean)) {
+    for (const line of chunk.toString('utf8').split(/\r?\n/).filter(Boolean)) {
       log('WARN', `[receiver] ${line}`);
     }
   });
