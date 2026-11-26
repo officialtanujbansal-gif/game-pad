@@ -1,3 +1,0 @@
-PyInstaller>=6.0,<7.0
-vgamepad>=0.1.0,<1.0
-websockets>=12.0,<16.0
