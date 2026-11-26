@@ -203,13 +203,13 @@ function startWindowsReceiver(pin) {
 
   child.stdout.on('data', (chunk) => {
     for (const line of chunk.toString('utf8').split(/\r?\n/).filter(Boolean)) {
-      const safeLine = line.replace(/(PIN\\s*:?\\s*)\\d{4,12}/gi, '$1[redacted]');
+      const safeLine = line.replace(/(PIN\s*:?\s*)\d{4,12}/gi, '$1[redacted]');
       log('INFO', `[receiver] ${safeLine}`);
     }
   });
   child.stderr.on('data', (chunk) => {
     for (const line of chunk.toString('utf8').split(/\r?\n/).filter(Boolean)) {
-      const safeLine = line.replace(/(PIN\\s*:?\\s*)\\d{4,12}/gi, '$1[redacted]');
+      const safeLine = line.replace(/(PIN\s*:?\s*)\d{4,12}/gi, '$1[redacted]');
       log('WARN', `[receiver] ${safeLine}`);
     }
   });
