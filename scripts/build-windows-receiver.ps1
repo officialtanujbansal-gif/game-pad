@@ -57,7 +57,7 @@ try {
   }
 
   $launcherText = Get-Content -Raw $launcherFile
-  foreach ($required in @("OMNISYNC_AUTOSTART", "vgamepad", "websockets", "redlinepad_windows_receiver.py", "--relay")) {
+  foreach ($required in @("OMNISYNC_AUTOSTART", "OMNISYNC_PIN", "OMNISYNC_RELAY", "vgamepad", "websockets", "redlinepad_windows_receiver.py", "--relay")) {
     if (-not $launcherText.Contains($required)) {
       throw "Generated Windows launcher is missing expected feature: $required"
     }
