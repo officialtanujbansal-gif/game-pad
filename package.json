@@ -1,7 +1,7 @@
 {
   "name": "omnisync-bridge",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "engines": {
     "node": ">=22.12.0"
@@ -93,8 +93,8 @@
     },
     "extraResources": [
       {
-        "from": "receiver-dist/OmniSync-Windows-Receiver",
-        "to": "receiver/OmniSync-Windows-Receiver"
+        "from": "receiver-dist",
+        "to": "receiver"
       }
     ]
   }
