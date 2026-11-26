@@ -193,7 +193,7 @@ function hasPython3() {
 
 function startWindowsReceiver(pin) {
   if (process.platform !== 'win32') return { started: false, reason: 'not-windows' };
-  if (!/^\\d{4,12}$/.test(String(pin || ''))) {
+  if (!/^\d{4,12}$/.test(String(pin || ''))) {
     throw new Error('The pairing PIN must contain 4 to 12 digits before the Windows receiver can start.');
   }
   if (!app.isPackaged) {
@@ -213,7 +213,7 @@ function startWindowsReceiver(pin) {
         receiverMissingDialogShown = true;
         dialog.showErrorBox(
           'OmniSync Windows Receiver is missing',
-          `This installation does not include the automatic controller receiver. Reinstall the latest OmniSync Bridge build.\\n\\n${message}\\n\\nDiagnostic log: ${getLogPath()}`
+          `This installation does not include the automatic controller receiver. Reinstall the latest OmniSync Bridge build.\n\n${message}\n\nDiagnostic log: ${getLogPath()}`
         );
       }
       throw new Error(message);
@@ -227,7 +227,7 @@ function startWindowsReceiver(pin) {
       receiverMissingDialogShown = true;
       dialog.showErrorBox(
         'Python 3 is required for controller output',
-        `${message}\\n\\nDownload: https://www.python.org/downloads/windows/\\n\\nDiagnostic log: ${getLogPath()}`
+        `${message}\n\nDownload: https://www.python.org/downloads/windows/\n\nDiagnostic log: ${getLogPath()}`
       );
     }
     return { started: false, reason: 'python-missing' };
@@ -259,8 +259,8 @@ function startWindowsReceiver(pin) {
   receiverPin = pin;
 
   const logReceiverLines = (level, chunk) => {
-    for (const line of chunk.toString('utf8').split(/\\r?\\n/).filter(Boolean)) {
-      const safeLine = line.replace(/(PIN\\s*:?\\s*)\\d{4,12}/gi, '$1[redacted]');
+    for (const line of chunk.toString('utf8').split(/\r?\n/).filter(Boolean)) {
+      const safeLine = line.replace(/(PIN\s*:?\s*)\d{4,12}/gi, '$1[redacted]');
       log(level, `[receiver] ${safeLine}`);
     }
   };
@@ -276,7 +276,7 @@ function startWindowsReceiver(pin) {
     if (!quitting) {
       dialog.showErrorBox(
         'OmniSync Windows Receiver could not start',
-        `${error.message || error}\\n\\nDiagnostic log: ${getLogPath()}`
+        `${error.message || error}\n\nDiagnostic log: ${getLogPath()}`
       );
     }
   });
