@@ -11,6 +11,7 @@ on:
       - "electron/**"
       - "public/**"
       - "src/**"
+      - "scripts/**"
       - ".github/workflows/build-windows.yml"
 
 permissions:
@@ -37,6 +38,18 @@ jobs:
 
       - name: Smoke-test bundled server
         run: npm run test:desktop-server
+
+      - name: Set up Python for the self-contained Windows receiver
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install receiver build dependencies
+        run: python -m pip install --upgrade pip pyinstaller vgamepad websockets
+
+      - name: Build and smoke-test bundled Windows receiver
+        shell: pwsh
+        run: ./scripts/build-windows-receiver.ps1
 
       - name: Package NSIS installer and portable EXE
         run: npx electron-builder --win nsis portable --x64 --publish never
