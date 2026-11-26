@@ -35,6 +35,18 @@ export default function App() {
 
   const sync = useGamepadSync(mode === 'pad' ? 'phone' : 'desktop');
 
+  // The Electron desktop shell starts the native Windows receiver as soon as
+  // the shared pairing PIN is available. Ordinary browser/PWA sessions have no
+  // preload API, so they remain unaffected.
+  useEffect(() => {
+    if (!/^\\d{4,12}$/.test(sync.pin)) return;
+    const receiverApi = window.omniSyncBridge;
+    if (!receiverApi) return;
+    receiverApi.setPairingPin(sync.pin).catch((error) => {
+      console.error('OmniSync Windows receiver could not be started:', error);
+    });
+  }, [sync.pin]);
+
   return (
     <MotionConfig reducedMotion="user">
       {mode === 'pad' ? (
