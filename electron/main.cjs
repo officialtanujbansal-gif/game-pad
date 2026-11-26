@@ -1,7 +1,6 @@
 const { app, BrowserWindow, dialog, shell } = require('electron');
 const net = require('node:net');
 const path = require('node:path');
-const { pathToFileURL } = require('node:url');
 const fs = require('node:fs');
 
 let mainWindow = null;
@@ -25,9 +24,10 @@ function applicationPaths() {
     ? path.join(process.resourcesPath, 'app')
     : path.resolve(__dirname, '..');
   return {
-    server: path.join(appRoot, 'dist-server', 'server.mjs'),
+    server: path.join(appRoot, 'dist-server', 'server.cjs'),
     renderer: path.join(appRoot, 'dist'),
     public: path.join(appRoot, 'public'),
+    root: appRoot,
   };
 }
 
@@ -63,8 +63,10 @@ async function startBackend() {
   process.env.APP_DATA_DIR = dataDirectory;
   process.env.APP_DIST_DIR = paths.renderer;
   process.env.APP_PUBLIC_DIR = paths.public;
+  process.env.APP_ROOT_DIR = paths.root;
 
-  const serverModule = await import(pathToFileURL(paths.server).href);
+  // CommonJS preserves normal Node require() semantics in the packaged runtime.
+  const serverModule = require(paths.server);
   if (typeof serverModule.startServer !== 'function') {
     throw new Error('The bundled server does not export startServer(). Rebuild OmniSync Bridge.');
   }
