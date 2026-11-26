@@ -7,3 +7,7 @@ coverage/
 .env*
 !.env.example
 data/
+dist-server/
+release/
+receiver-dist/
+receiver-build/
