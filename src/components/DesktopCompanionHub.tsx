@@ -881,12 +881,12 @@ export const DesktopCompanionHub: React.FC<DesktopCompanionHubProps> = ({
                     Windows PC Receiver Bridge
                   </h2>
                   <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                    In the installed Windows desktop app, the receiver starts automatically when the pairing PIN is ready. No separate Python installation or BAT launch is required. ViGEmBus must be installed once for virtual Xbox controller output.
+                    In the installed Windows desktop app, the bundled BAT and receiver script start automatically when the pairing PIN is ready. Python 3 must be installed; the launcher checks for vgamepad and websockets and installs them on first use. You do not need to run the BAT manually. ViGEmBus must be installed once for virtual Xbox controller output.
                   </p>
 
                   <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-xs leading-relaxed text-zinc-700 dark:text-zinc-300">
-                    <strong className="text-emerald-700 dark:text-emerald-400">Automatic startup enabled in desktop build 1.0.2+</strong>
-                    <div className="mt-1">The bundled receiver follows this app's current PIN and reconnects to the local PC relay. The downloads below are manual fallback tools only.</div>
+                    <strong className="text-emerald-700 dark:text-emerald-400">Automatic startup enabled in desktop build 1.0.3+</strong>
+                    <div className="mt-1">The BAT launcher receives this app's current PIN and local relay address. The downloads below are manual fallback tools only.</div>
                   </div>
 
                   <div className="mt-5 text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
@@ -945,7 +945,7 @@ export const DesktopCompanionHub: React.FC<DesktopCompanionHubProps> = ({
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="font-mono-tabular font-bold text-[#e11d48]">02.</span>
-                    <span>Open OmniSync Bridge desktop build 1.0.2 or newer. Its bundled Windows receiver starts automatically using the displayed PIN.</span>
+                    <span>Open OmniSync Bridge desktop build 1.0.3 or newer. Make sure Python 3 is installed. Its bundled Windows receiver starts automatically using the displayed PIN.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="font-mono-tabular font-bold text-[#e11d48]">03.</span>
