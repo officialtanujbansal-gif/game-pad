@@ -39,7 +39,7 @@ export default function App() {
   // the shared pairing PIN is available. Ordinary browser/PWA sessions have no
   // preload API, so they remain unaffected.
   useEffect(() => {
-    if (!/^\\d{4,12}$/.test(sync.pin)) return;
+    if (!/^\d{4,12}$/.test(sync.pin)) return;
     const receiverApi = window.omniSyncBridge;
     if (!receiverApi) return;
     receiverApi.setPairingPin(sync.pin).catch((error) => {
