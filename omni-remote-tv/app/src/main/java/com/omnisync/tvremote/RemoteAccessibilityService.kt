@@ -59,6 +59,7 @@ class RemoteAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         active = this
+        sendBroadcast(Intent(TvConnectionService.ACTION_REFRESH_CAPABILITIES).setPackage(packageName))
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) = Unit
@@ -66,6 +67,7 @@ class RemoteAccessibilityService : AccessibilityService() {
 
     override fun onDestroy() {
         if (active === this) active = null
+        sendBroadcast(Intent(TvConnectionService.ACTION_REFRESH_CAPABILITIES).setPackage(packageName))
         super.onDestroy()
     }
 }
