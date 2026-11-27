@@ -97,4 +97,6 @@ Put the service behind a TLS reverse proxy before using it over the internet. Th
 
 ## Current validation status
 
-The source and Android build workflow are committed. The first GitHub Actions Android build is being checked. A successful CI build proves the APK compiles; it does not prove every Fire TV / Android TV model accepts every command. Physical-device testing is still required, especially for Fire OS 7/8 D-pad navigation and background-service behaviour.
+The current Android receiver source at commit `336ae31079d5fe6ab62823899c84398666c7f163` compiled successfully in GitHub Actions. The resulting debug APK artifact is `OmniRemote-TV-Android-APK` (workflow run [46034975135](https://github.com/officialtanujbansal-gif/game-pad/actions/runs/46034975135)). The relay integration tests, including pairing approval, command forwarding, capability persistence, phone re-authentication and remote revocation, passed in [run 46035022563](https://github.com/officialtanujbansal-gif/game-pad/actions/runs/46035022563); the Docker image also built successfully.
+
+CI confirms that the source builds and the relay protocol tests pass. It does not prove every Fire TV / Android TV model accepts every command. No physical television has been tested yet. Physical-device testing is still required, especially for older Fire OS D-pad navigation, vendor-specific volume behaviour, and background-service survival after the TV app is closed or the device sleeps.
