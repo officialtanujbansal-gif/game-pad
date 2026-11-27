@@ -136,6 +136,7 @@ function handleTvHello(session, message) {
   const old = tvConnections.get(deviceId);
   if (old && old !== session) old.ws.close(4001, "Replaced by a newer TV connection");
   session.role = "tv";
+  clearTimeout(session.authTimer);
   session.deviceId = deviceId;
   tvConnections.set(deviceId, session);
 
@@ -229,6 +230,7 @@ function handlePairDecision(session, message) {
 
   const phone = pending.phone;
   phone.role = "phone";
+  clearTimeout(phone.authTimer);
   phone.deviceId = pending.deviceId;
   phone.remoteId = pending.remoteId;
   if (!phoneConnections.has(pending.deviceId)) phoneConnections.set(pending.deviceId, new Set());
@@ -257,6 +259,7 @@ function handlePhoneAuth(session, message) {
   remote.lastSeen = new Date().toISOString();
   persistDb();
   session.role = "phone";
+  clearTimeout(session.authTimer);
   session.deviceId = deviceId;
   session.remoteId = remoteId;
   if (!phoneConnections.has(deviceId)) phoneConnections.set(deviceId, new Set());
@@ -293,6 +296,10 @@ function handleMessage(session, raw) {
   if (message.type === "control") return handleControl(session, message);
   if (message.type === "command_result" && session.role === "tv") {
     notifyPhones(session.deviceId, message);
+    return;
+  }
+  if (message.type === "tv_capabilities" && session.role === "tv") {
+    notifyPhones(session.deviceId, { type: "tv_capabilities", apiLevel: Number(message.apiLevel) || 0, androidVersion: String(message.androidVersion || ""), dpad: message.dpad === true, accessibilityEnabled: message.accessibilityEnabled === true, platform: session.platform });
   }
 }
 
@@ -353,8 +360,10 @@ server.on("upgrade", (req, socket, head) => {
 
 wss.on("connection", (ws, req) => {
   const session = { ws, role: null, deviceId: null, remoteId: null, ip: getIp(req) };
+  session.authTimer = setTimeout(() => { if (session.role === null) ws.close(1008, "Authentication timeout"); }, 120_000);
   ws.on("message", data => handleMessage(session, data));
   ws.on("close", () => {
+    clearTimeout(session.authTimer);
     if (session.role === "tv" && tvConnections.get(session.deviceId) === session) {
       tvConnections.delete(session.deviceId);
       for (const [code, entry] of pairingCodes) if (entry.tv === session) pairingCodes.delete(code);
