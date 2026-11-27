@@ -1,0 +1,36 @@
+name: Test OmniRemote TV cloud relay
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "cloud-relay/**"
+      - "phone-remote/**"
+      - ".github/workflows/test-omni-remote-relay.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  relay-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: cloud-relay/package.json
+      - name: Install relay dependencies
+        run: npm install --no-audit --no-fund
+        working-directory: cloud-relay
+      - name: Syntax-check browser client
+        run: node --check phone-remote/app.js
+      - name: Test pairing, authorization and command relay
+        run: npm test
+        working-directory: cloud-relay
+      - name: Build relay container
+        run: docker build -f cloud-relay/Dockerfile -t omni-remote-tv .
