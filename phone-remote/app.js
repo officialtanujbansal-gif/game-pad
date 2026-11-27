@@ -116,9 +116,24 @@ function handleMessage(message) {
       $("tvStatus").textContent = message.online ? "TV ONLINE" : "TV OFFLINE";
       if (!message.online) toast("TV is currently offline");
       break;
+    case "tv_capabilities": {
+      const notice = $("capabilityNotice");
+      if (!message.accessibilityEnabled) {
+        notice.textContent = "Enable OmniRemote TV under Accessibility on the television. Remote commands will not work until the service is enabled.";
+        notice.hidden = false;
+      } else if (!message.dpad) {
+        notice.textContent = "This TV runs Android API " + message.apiLevel + ". Its system does not expose the newer global D-pad actions. Back, Home and volume may work; full directional navigation needs a compatible input adapter.";
+        notice.hidden = false;
+      } else {
+        notice.hidden = true;
+      }
+      break;
+    }
     case "command_result":
       if (!message.success) {
         const reason = message.reason === "tv_offline" ? "TV is offline" :
+          message.reason === "dpad_requires_android_13" ? "Full D-pad control needs Android 13 / API 33 or newer" :
+          message.reason === "accessibility_service_disabled" ? "Enable OmniRemote TV under Accessibility on the TV" :
           message.reason === "unsupported_action" ? "This action is unavailable on this TV" :
           "TV could not perform " + message.action.replaceAll("_", " ");
         toast(reason);
