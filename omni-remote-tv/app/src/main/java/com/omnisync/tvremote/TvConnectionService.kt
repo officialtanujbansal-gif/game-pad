@@ -135,7 +135,7 @@ class TvConnectionService : Service() {
             return
         }
         val url = configured.trim().let { if (it.endsWith("/ws")) it else it.trimEnd('/') + "/ws" }
-        if (!url.startsWith("wss://") && !url.startsWith("ws://127.0.0.1") && !url.startsWith("ws://192.168.")) {
+        if (!url.startsWith("wss://")) {
             updateNotification("Relay must use WSS for remote internet access")
             return
         }
