@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">OmniRemote TV</string>
+    <string name="accessibility_service_description">Allows OmniRemote TV to send navigation and system actions after you explicitly enable the service.</string>
+</resources>
