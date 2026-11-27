@@ -107,7 +107,7 @@ class MainActivity : Activity() {
         val connectButton = button("SAVE ADDRESS  /  CONNECT")
         connectButton.setOnClickListener {
             val url = relayInput.text.toString().trim()
-            if (!url.startsWith("wss://") && !url.startsWith("ws://127.0.0.1") && !url.startsWith("ws://192.168.")) {
+            if (!url.startsWith("wss://")) {
                 statusText.text = "Use a secure wss:// relay URL for internet control"
                 return@setOnClickListener
             }
