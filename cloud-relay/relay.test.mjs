@@ -160,6 +160,7 @@ test("TV registration, phone approval, command forwarding and phone re-auth work
     clients.push(phoneAgain);
     await once(phoneAgain.ws, "open");
     const authenticated = phoneAgain.waitFor("phone_ready");
+    const restoredCapabilities = phoneAgain.waitFor("tv_capabilities");
     phoneAgain.ws.send(JSON.stringify({
       type: "phone_auth",
       deviceId,
@@ -167,6 +168,23 @@ test("TV registration, phone approval, command forwarding and phone re-auth work
       remoteToken
     }));
     assert.equal((await authenticated).deviceName, "Test Android TV");
+    assert.equal((await restoredCapabilities).dpad, true);
+
+    const unpaired = phoneAgain.waitFor("unpaired");
+    phoneAgain.ws.send(JSON.stringify({ type: "phone_unpair" }));
+    assert.equal((await unpaired).deviceId, deviceId);
+
+    const revokedPhone = connect(wsUrl);
+    clients.push(revokedPhone);
+    await once(revokedPhone.ws, "open");
+    const revoked = revokedPhone.waitFor("error");
+    revokedPhone.ws.send(JSON.stringify({
+      type: "phone_auth",
+      deviceId,
+      remoteId,
+      remoteToken
+    }));
+    assert.equal((await revoked).code, "auth_failed");
   } catch (error) {
     throw new Error(error.message + "\nRelay stdout:\n" + stdout + "\nRelay stderr:\n" + stderr);
   } finally {
