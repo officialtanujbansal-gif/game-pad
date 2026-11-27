@@ -1,0 +1,44 @@
+name: Build OmniRemote TV Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "omni-remote-tv/**"
+      - ".github/workflows/build-omni-remote-tv.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: omni-remote-tv-android-main
+  cancel-in-progress: true
+
+jobs:
+  android-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+      - name: Build debug APK
+        run: gradle --no-daemon --stacktrace :app:assembleDebug
+        working-directory: omni-remote-tv
+      - name: Upload Android TV APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: OmniRemote-TV-Android-APK
+          path: omni-remote-tv/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
