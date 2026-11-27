@@ -31,6 +31,7 @@ class TvConnectionService : Service() {
         const val ACTION_STATUS = "com.omnisync.tvremote.STATUS"
         const val ACTION_PAIR_REQUEST = "com.omnisync.tvremote.PAIR_REQUEST"
         const val ACTION_PAIR_DECISION = "com.omnisync.tvremote.PAIR_DECISION"
+        const val ACTION_REFRESH_CAPABILITIES = "com.omnisync.tvremote.REFRESH_CAPABILITIES"
         private const val CHANNEL_ID = "omni_remote_connection"
         private const val NOTIFICATION_ID = 711
     }
@@ -55,6 +56,12 @@ class TvConnectionService : Service() {
         }
     }
 
+    private val capabilityRefreshReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            publishCapabilities()
+        }
+    }
+
     private val reconnect = Runnable { connect() }
 
     override fun onCreate() {
@@ -63,6 +70,10 @@ class TvConnectionService : Service() {
         val filter = IntentFilter(ACTION_PAIR_DECISION)
         if (Build.VERSION.SDK_INT >= 33) registerReceiver(pairDecisionReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
         else registerReceiver(pairDecisionReceiver, filter)
+
+        val capabilityFilter = IntentFilter(ACTION_REFRESH_CAPABILITIES)
+        if (Build.VERSION.SDK_INT >= 33) registerReceiver(capabilityRefreshReceiver, capabilityFilter, Context.RECEIVER_NOT_EXPORTED)
+        else registerReceiver(capabilityRefreshReceiver, capabilityFilter)
     }
 
     @Suppress("DEPRECATION")
@@ -174,20 +185,8 @@ class TvConnectionService : Service() {
         when (message.optString("type")) {
             "tv_ready" -> {
                 updateNotification("TV online · waiting for phone pairing")
-                val accessEnabled = RemoteAccessibilityService.isActive()
-                val capability = when {
-                    Build.VERSION.SDK_INT >= 33 && accessEnabled -> "Full system D-pad actions available on this Android version."
-                    Build.VERSION.SDK_INT >= 33 -> "Enable OmniRemote under Accessibility to activate D-pad actions."
-                    else -> "This TV OS is older than Android 13. Full system D-pad injection is not exposed by this receiver."
-                }
-                broadcastStatus("TV online · waiting for pairing", capability = capability)
-                sendMessage(JSONObject()
-                    .put("type", "tv_capabilities")
-                    .put("apiLevel", Build.VERSION.SDK_INT)
-                    .put("androidVersion", Build.VERSION.RELEASE)
-                    .put("dpad", Build.VERSION.SDK_INT >= 33)
-                    .put("accessibilityEnabled", accessEnabled)
-                    .put("platform", platformName()))
+                broadcastStatus("TV online · waiting for pairing", capability = capabilitySummary())
+                publishCapabilities()
             }
             "pairing_code" -> broadcastStatus("Waiting for phone pairing", message.optString("code"))
             "pair_request" -> {
@@ -201,6 +200,23 @@ class TvConnectionService : Service() {
             "control" -> executeControl(webSocket, message)
             "error" -> updateNotification(message.optString("message", "Relay error"))
         }
+    }
+
+    private fun capabilitySummary(): String = when {
+        Build.VERSION.SDK_INT >= 33 && RemoteAccessibilityService.isActive() -> "Full system D-pad actions available on this Android version."
+        Build.VERSION.SDK_INT >= 33 -> "Enable OmniRemote under Accessibility to activate D-pad actions."
+        else -> "This TV OS is older than Android 13. Full system D-pad injection is not exposed by this receiver."
+    }
+
+    private fun publishCapabilities() {
+        if (socket == null) return
+        sendMessage(JSONObject()
+            .put("type", "tv_capabilities")
+            .put("apiLevel", Build.VERSION.SDK_INT)
+            .put("androidVersion", Build.VERSION.RELEASE)
+            .put("dpad", Build.VERSION.SDK_INT >= 33)
+            .put("accessibilityEnabled", RemoteAccessibilityService.isActive())
+            .put("platform", platformName()))
     }
 
     private fun executeControl(webSocket: WebSocket, message: JSONObject) {
@@ -264,6 +280,7 @@ class TvConnectionService : Service() {
         intentionalStop = true
         handler.removeCallbacksAndMessages(null)
         try { unregisterReceiver(pairDecisionReceiver) } catch (_: Exception) {}
+        try { unregisterReceiver(capabilityRefreshReceiver) } catch (_: Exception) {}
         socket?.close(1000, "Service stopped")
         socket = null
         client.dispatcher.executorService.shutdown()
