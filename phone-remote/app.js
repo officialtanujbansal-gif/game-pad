@@ -106,6 +106,14 @@ function handleMessage(message) {
       $("tvStatus").textContent = "REMOTE CONNECTED";
       toast("Remote reconnected");
       break;
+    case "unpaired":
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem("omniRemoteRemoteId");
+      localStorage.removeItem("omniRemoteRemoteToken");
+      state.paired = null;
+      showPairing();
+      toast("Phone access revoked");
+      break;
     case "pair_waiting":
       setMessage("Request sent. Approve this phone on the TV screen.", "success");
       break;
@@ -170,6 +178,9 @@ $("pairForm").addEventListener("submit", event => {
   setMessage("Sending pairing request…");
 });
 $("forgetButton").addEventListener("click", () => {
+  if (state.connected && state.socket?.readyState === WebSocket.OPEN && state.paired) {
+    state.socket.send(JSON.stringify({ type: "phone_unpair" }));
+  }
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem("omniRemoteRemoteId");
   localStorage.removeItem("omniRemoteRemoteToken");
