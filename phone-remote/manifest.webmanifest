@@ -1,0 +1,10 @@
+{
+  "name": "OmniRemote TV",
+  "short_name": "OmniRemote",
+  "description": "Secure phone remote for Android TV and Fire TV",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#08090d",
+  "theme_color": "#08090d",
+  "orientation": "portrait"
+}
