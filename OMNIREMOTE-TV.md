@@ -8,12 +8,12 @@ OmniRemote TV is a separate TV-control project inside this repository. It has th
 
 ## Current feature scope
 
-The first receiver implements secure device registration, one-time six-digit pairing codes, TV-side approval, reconnecting WebSocket sessions, D-pad navigation where the OS exposes it, Back, Home, volume up/down, mute, and the system power menu.
+The first receiver implements secure device registration, six-digit pairing codes, TV-side approval, reconnecting WebSocket sessions, D-pad navigation where the OS exposes it, Back, Home, volume up/down, mute, and the system power menu.
 
 This is a beta foundation, not a universal TV remote yet:
 
 - Full system D-pad navigation through Android's global accessibility actions requires Android API 33 or newer (Android 13+).
-- Older Fire OS 7/8 devices are based on Android API 28–30. This receiver can connect to the relay on those models, and some actions such as volume / Back / Home may work, but full D-pad navigation is not available through this adapter. A separate legacy Fire TV input adapter is still needed.
+- Fire OS 7 is based on API 28; Fire OS 8 spans API 29–30; Fire OS 14 spans API 31–34; and Fire OS 16 spans API 35–36. Only Fire OS variants running API 33 or newer expose the D-pad actions used by this receiver. On older variants the TV can connect to the relay, and some actions such as volume / Back / Home may work, but full D-pad navigation is not available through this adapter. A separate legacy Fire TV input adapter is still needed.
 - Android / Fire OS versions and vendor firmware differ. Test the APK on the actual TV before relying on it.
 - Power Menu opens the TV's system power dialog. It is not a guaranteed power-off command. Waking a fully powered-off TV is not supported by this first receiver; standby / network-wake support is model-dependent.
 - Text entry, app launching, channel control, Samsung Tizen, and LG webOS are not included in this first beta.
