@@ -137,6 +137,7 @@ function handleTvHello(session, message) {
   if (old && old !== session) old.ws.close(4001, "Replaced by a newer TV connection");
   session.role = "tv";
   clearTimeout(session.authTimer);
+  session.platform = device.platform;
   session.deviceId = deviceId;
   tvConnections.set(deviceId, session);
 
@@ -211,6 +212,7 @@ function handlePairDecision(session, message) {
   pendingPairs.delete(message.requestId);
   if (message.approved !== true) {
     send(pending.phone.ws, { type: "pair_denied", message: "Pairing was declined on the TV." });
+    issuePairingCode(session);
     return;
   }
 
@@ -242,6 +244,7 @@ function handlePairDecision(session, message) {
     platform: device.platform
   });
   send(session.ws, { type: "remote_added", remoteName: pending.remoteName });
+  issuePairingCode(session);
 }
 
 function handlePhoneAuth(session, message) {
@@ -388,7 +391,12 @@ const heartbeat = setInterval(() => {
     ws.ping();
   }
   const now = Date.now();
-  for (const [code, entry] of pairingCodes) if (entry.expiresAt < now) pairingCodes.delete(code);
+  for (const [code, entry] of pairingCodes) {
+    if (entry.expiresAt < now) {
+      pairingCodes.delete(code);
+      if (entry.tv.ws.readyState === WebSocket.OPEN) issuePairingCode(entry.tv);
+    }
+  }
   for (const [id, pending] of pendingPairs) {
     if (now - pending.createdAt > 90_000) {
       pendingPairs.delete(id);
