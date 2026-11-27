@@ -57,7 +57,8 @@ function cleanName(value, fallback) {
   return typeof value === "string" ? value.trim().slice(0, 60) || fallback : fallback;
 }
 function getIp(req) {
-  return (req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown").toString().split(",")[0].trim();
+  const chain = (req.headers["x-forwarded-for"] || "").toString().split(",").map(v => v.trim()).filter(Boolean);
+  return chain.length ? chain[chain.length - 1] : (req.socket.remoteAddress || "unknown");
 }
 
 const tvConnections = new Map();
@@ -99,6 +100,10 @@ function removePhone(session) {
     set.delete(session);
     if (!set.size) phoneConnections.delete(session.deviceId);
   }
+}
+
+function sendCapabilities(session, device) {
+  if (device?.capabilities) send(session.ws, { type: "tv_capabilities", ...device.capabilities });
 }
 
 function handleTvHello(session, message) {
@@ -243,6 +248,7 @@ function handlePairDecision(session, message) {
     deviceName: device.name,
     platform: device.platform
   });
+  sendCapabilities(phone, device);
   send(session.ws, { type: "remote_added", remoteName: pending.remoteName });
   issuePairingCode(session);
 }
@@ -268,7 +274,31 @@ function handlePhoneAuth(session, message) {
   if (!phoneConnections.has(deviceId)) phoneConnections.set(deviceId, new Set());
   phoneConnections.get(deviceId).add(session);
   send(session.ws, { type: "phone_ready", deviceId, deviceName: device.name, platform: device.platform });
+  sendCapabilities(session, device);
   send(session.ws, { type: "tv_status", online: tvConnections.has(deviceId), deviceName: device.name });
+}
+
+function handlePhoneUnpair(session) {
+  if (session.role !== "phone" || !session.deviceId || !session.remoteId) return;
+  const deviceId = session.deviceId;
+  const remoteId = session.remoteId;
+  const device = db.devices[deviceId];
+  if (device?.remotes?.[remoteId]) {
+    delete device.remotes[remoteId];
+    persistDb();
+  }
+  for (const phone of [...connectedPhones(deviceId)]) {
+    if (phone.remoteId === remoteId) {
+      send(phone.ws, { type: "unpaired", deviceId });
+      removePhone(phone);
+      phone.role = null;
+      phone.deviceId = null;
+      phone.remoteId = null;
+      phone.authTimer = setTimeout(() => {
+        if (phone.role === null) phone.ws.close(1008, "Authentication timeout");
+      }, 120_000);
+    }
+  }
 }
 
 function handleControl(session, message) {
@@ -296,13 +326,17 @@ function handleMessage(session, raw) {
   if (session.role === null && message.type === "phone_pair") return handlePhonePair(session, message);
   if (session.role === null && message.type === "phone_auth") return handlePhoneAuth(session, message);
   if (message.type === "pair_decision") return handlePairDecision(session, message);
+  if (message.type === "phone_unpair") return handlePhoneUnpair(session);
   if (message.type === "control") return handleControl(session, message);
   if (message.type === "command_result" && session.role === "tv") {
     notifyPhones(session.deviceId, message);
     return;
   }
   if (message.type === "tv_capabilities" && session.role === "tv") {
-    notifyPhones(session.deviceId, { type: "tv_capabilities", apiLevel: Number(message.apiLevel) || 0, androidVersion: String(message.androidVersion || ""), dpad: message.dpad === true, accessibilityEnabled: message.accessibilityEnabled === true, platform: session.platform });
+    const capabilities = { apiLevel: Number(message.apiLevel) || 0, androidVersion: String(message.androidVersion || ""), dpad: message.dpad === true, accessibilityEnabled: message.accessibilityEnabled === true, platform: session.platform };
+    const device = db.devices[session.deviceId];
+    if (device) { device.capabilities = capabilities; persistDb(); }
+    notifyPhones(session.deviceId, { type: "tv_capabilities", ...capabilities });
   }
 }
 
