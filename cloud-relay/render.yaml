@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: omni-remote-tv
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./cloud-relay/Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthz
+    envVars:
+      - key: OR_DATA_DIR
+        value: /var/data
+    disk:
+      name: omni-remote-pairings
+      mountPath: /var/data
+      sizeGB: 1
